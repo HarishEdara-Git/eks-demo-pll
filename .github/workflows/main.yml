@@ -1,4 +1,4 @@
-name: Deploy Apache Web App to EKS
+name: Deploy NGINX Deployment to EKS
 
 on:
   push:
@@ -6,44 +6,25 @@ on:
       - main
 
 env:
+  AWS_REGION: ap-south-1
   CLUSTER_NAME: harisheks
   NAMESPACE: my-namespace
-  AWS_REGION: ap-south-1
-  IMAGE_REPO: sampleproject_githubactions
-  IMAGE_TAG: latest
+  KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
 jobs:
   deploy:
-    name: Deploy Apache Web App
+    name: Deploy NGINX Deployment
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Setup kubectl
+        uses: steebchen/kubectl@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          version: latest
+          kubeconfig: ${{ env.KUBE_CONFIG_DATA }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }} .
-          docker tag ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }} ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
-
-      - name: Push Docker image to Amazon ECR
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
-
-      - name: Update kubeconfig
-        run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
-
-      - name: Deploy Apache Web App to EKS
-        run: |
-          kubectl apply -f deployment.yaml -n ${{ env.NAMESPACE }}
+      - name: Apply deployment.yaml
+        run: kubectl apply -f deployment.yml -n ${{ env.NAMESPACE }}
