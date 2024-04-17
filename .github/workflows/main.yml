@@ -1,4 +1,4 @@
-name: Deploy NGINX Deployment to EKS
+name: Deploy Pods and Services to EKS
 
 on:
   push:
@@ -6,25 +6,27 @@ on:
       - main
 
 env:
-  AWS_REGION: ap-south-1
-  CLUSTER_NAME: harisheks
-  NAMESPACE: my-namespace
-  KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+  AWS_REGION: ap-south-1  # Replace with your AWS region
+  CLUSTER_NAME: harisheks  # Replace with your EKS cluster name
+  NAMESPACE: my-namespace  # Replace with your namespace
 
 jobs:
   deploy:
-    name: Deploy NGINX Deployment
+    name: Deploy Pod and Service
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Setup kubectl
-        uses: steebchen/kubectl@v2
+      - name: Use eks/eks-ctl action (recommended)
+        uses: eks/eks-ctl@v1  # This action handles authentication for you
         with:
-          version: latest
-          kubeconfig: ${{ env.KUBE_CONFIG_DATA }}
+          cluster: ${{ env.CLUSTER_NAME }}
+          region: ${{ env.AWS_REGION }}
 
-      - name: Apply deployment.yaml
+      - name: Apply deployment.yml
         run: kubectl apply -f deployment.yml -n ${{ env.NAMESPACE }}
+
+      - name: Apply service.yml
+        run: kubectl apply -f service.yml -n ${{ env.NAMESPACE }}
